@@ -1,0 +1,15 @@
+
+digraph test {
+	//node [bgcolor=blue,labelloc=t,labeljust=r]
+	//node [bgcolor=blue,labeljust=l]
+	graph [labeljust=l]
+	node [labeljust=l]
+	label="hello world"
+	fa [label="he\l"]
+	main -> fa;
+	main -> fb [label="bb"];
+	fa -> fx;
+	fa -> print;
+	fb -> print;
+	fx -> print;
+}

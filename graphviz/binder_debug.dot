@@ -1,0 +1,251 @@
+
+/* 
+ * graphviz.org
+ * a -> b
+ */
+digraph binder {
+	/*
+	   label as call parameter
+	       main() { fa("aa"); }
+	       main -> fa [label="aa"];
+	 */
+	rankdir=LR;
+	node [ shape=box style=filled ]
+
+	/*
+	   1st level
+	 */
+	binder -> state;
+	binder -> stats;
+	binder -> transactions;
+	binder -> transaction_log;
+	binder -> failed_transaction_log;
+	binder -> proc;
+
+	/*
+	   node && style definition
+	   of print info
+	 */
+	node [ color=darkolivegreen3 ];
+	/* binder_state_show */
+	NODE_bst_state [ label="binder state:\l" ];
+	NODE_bst_deadnode [ label="dead nodes:\l" ];
+
+	/* binder_stats_show */
+	NODE_bss_stats [ label="binder stats:\l" ];
+
+	/* binder_transactoins_show */
+	NODE_bts_trans [ label="binder transactions:\l" ];
+
+	/* binder_transaction_log_show */
+	NODE_btl_logentry [ label= "\'%d: %s from %d:%d to %d:%d context %s node %d handle %d size %d:%d ret %d/%d l=     %d\'  -- \l
+                    e->debug_id, (e->call_type == 2) ? 'reply' :\l
+                    ((e->call_type == 1) ? 'async' : 'call '), e->from_proc,\l
+                    e->from_thread, e->to_proc, e->to_thread, e->context_name,\l
+                    e->to_node, e->target_handle, e->data_size, e->offsets_size,\l
+                    e->return_error, e->return_error_param,\l
+                    e->return_error_line\l" ];
+
+	/* proc */
+	NODE_bps_state [ label="binder proc state:\l" ]
+
+	/* print_binder_node */
+	NODE_pbn_node [ label="\'  node %d: u%016llx c%016llx hs %d hw %d ls %d lw %d is %d iw %d tr %d\' -- \l
+                    node->debug_id, (u64)node->ptr, (u64)node->cookie,\l
+                    node->has_strong_ref, node->has_weak_ref,\l
+                    node->local_strong_refs, node->local_weak_refs,\l
+                    node->internal_strong_refs, count, node->tmp_refs\l" ];
+	NODE_pbn_proc [ label=" proc\l" ];
+	NODE_pbn_proc_pid [ label=" %d -- ref->proc->pid\l" ];
+
+	/* print_binder_transaction_ilocked */
+	NODE_pbt_t [ label="'%s %d: %pK from %d:%d to %d:%d code %x flags %x pri %ld r%d',\l
+                    prefix, t->debug_id, t,\l
+                    t->from ? t->from->proc->pid : 0,\l
+                    t->from ? t->from->pid : 0,\l
+                    to_proc ? to_proc->pid : 0,\l
+                    t->to_thread ? t->to_thread->pid : 0,\l
+                    t->code, t->flags, t->priority, t->need_reply\l" ];
+
+	/* print_binder_proc */
+	NODE_pbp_proc [ label="proc %d\\n, proc->pid\l" ];
+	NODE_pbp_context [ label="context %s\\n, proc->context->name\l" ];
+	NODE_pbp_ddb [ label=" has delivered dead binder\\n\l" ];
+
+	/* print_binder_ref */
+	NODE_pbr_ref [ label="'  ref %d: desc %d %snode %d s %d w %d d %pK\\n' -- \l
+                    ref->data.debug_id, ref->data.desc,\l
+                    ref->node->proc ? '' : 'dead ',\l
+                    ref->node->debug_id, ref->data.strong,\l
+                    ref->data.weak, ref->death\l" ];
+
+	/* print_binder_buffer */
+	NODE_pbb_buffer [ label="%s %d: %pK size %zd:%zd:%zd %s\\n --\l
+                    prefix, buffer->debug_id, buffer->data,\l
+                    buffer->data_size, buffer->offsets_size,\l
+                    buffer->extra_buffers_size,\l
+                    buffer->transaction ? 'active' : 'delivered'\l" ];
+
+	/* print_binder_thread */
+	NODE_pbt_thread [ label="  thread %d: l %02x need_return %d tr %d\\n --\l
+                         thread->pid, thread->looper,\l
+                         thread->looper_need_return,\l
+                         atomic_read(&thread->tmp_ref)\l" ];
+
+	/* func: print_binder_stats */
+	NODE_pbs_bc [ label="%s%s: %d\\n -- prefix, binder_command_strings[i], stats->bc[i]\l" ];
+	NODE_pbs_br [ label="%s%s: %d\\n -- prefix, binder_return_strings[i], stats->br[i]\l" ];
+	NODE_pbs_obj [ label="%s%s: active %d total %d\\n -- \l
+                                 prefix,\l
+                                 binder_objstat_strings[i],\l
+                                 stats->obj_created[i] - stats->obj_deleted[i],\l
+                                 stats->obj_created[i]\l" ];
+
+	/* func: print_binder_proc_stats */
+	NODE_pbps_proc [ label="proc %d\\n, proc->pid\l" ];
+	NODE_pbps_context [ label="context %s\\n, proc->context->name\l" ];
+	NODE_pbps_threadc [ label="  threads: %d\\n, count<proc->threads>\l" ];
+	NODE_pbps_threads [ label="\'  requested threads: %d+%d/%d\\n\'\l
+                         \'  ready threads %d\\n\'\l
+                         \'  free async space %zd\\n\' --  proc->requested_threads,\l
+                         proc->requested_threads_started, proc->max_threads,\l
+                         ready_threads<proc->waiting_threads>,\l
+                         free_async_space\l" ];
+	NODE_pbps_nodes [ label="'  nodes: %d\\n', count<proc->nodes>\l" ];
+	NODE_pbps_refs [ label="'  refs: %d s %d w %d\\n', count<proc->refs_by_desc>, strong<ref->data.strong>, weak<ref->data.weak>\l" ];
+	NODE_pbps_buffers [ label="'  buffers: %d\\n', count<proc->alloc->allocated_buffers>\l" ];
+	NODE_pbps_pendings [ label="'  pending transactions: %d\\n', count<proc->todo w->type == BINDER_WORK_TRANSACTION>\l" ];
+
+	/* func: binder_alloc_print_pages */
+	NODE_bpp_pages [ label="'  pages: %d:%d:%d\\n', active<list_empty(&page->lru)>, lru<else>, free<!page->page_ptr>\l" ];
+	NODE_bpp_pages_high [ label="'  pages high watermark: %zu\\n', alloc->pages_high\l" ];
+	node [ color="" ];
+
+	/*
+	   state
+	 */
+	state -> "binder_state_show()" [ color=blue ];
+	"binder_state_show()" -> NODE_bst_state [ color=blue ];
+	"binder_state_show()" -> NODE_bst_deadnode [ color=blue ];
+
+	/* block 1, binder_node */
+	"binder_state_show()" -> "hlist_for binder_dead_nodes" [ color=blue ];
+	"hlist_for binder_dead_nodes" -> "print_binder_node_nilocked()" [ color=blue ];
+
+	/* block 2, binder_proc */
+	"binder_state_show()" -> "hlist_for binder_procs" [ color=blue ];
+	"hlist_for binder_procs" -> "print_binder_proc()" [ label = "print_all=1" color=blue ];
+
+	/*
+	   stats
+	 */
+	stats -> "binder_stats_show()" [ color=brown ];
+	"binder_stats_show()" -> NODE_bss_stats [ color=brown ];
+	/* block 1 */
+	"binder_stats_show()" -> "print_binder_stats()" [ label = "binder_stats" color=brown ];
+	/* block 2 */
+	"binder_stats_show()" -> "hlist_for binder_procs" [ color=brown ];
+	"hlist_for binder_procs" -> "print_binder_proc_stats()" [ color=brown ];
+
+	/*
+	   transactions
+	 */
+	transactions -> "binder_transactoins_show()" [ color=darkorchid ];
+	"binder_transactoins_show()" -> NODE_bts_trans [ color=darkorchid ];
+	/* block 1 */
+	"binder_transactoins_show()" -> "hlist_for binder_procs" [ color=darkorchid ];
+	"hlist_for binder_procs" -> "print_binder_proc()" [ label = "print_all=0" color=darkorchid ];
+
+	/*
+	   transaction_log
+	 */
+	transaction_log -> "binder_transaction_log_show()" [ label = "&binder_transaction_log" color=gold ];
+	"binder_transaction_log_show()" -> "for_count ARRAY_SIZE(log->entry)" [ color=gold ];
+	"for_count ARRAY_SIZE(log->entry)" -> "print_binder_transaction_log_entry()" [ color=gold ];
+	
+	/*
+	   failed_transaction_log
+	 */
+	failed_transaction_log -> "binder_transaction_log_show()" [ label = "&binder_transaction_log_failed" color=orange ];
+	//"binder_transaction_log_show()" -> "for_count ARRAY_SIZE(log->entry)" [ color=orange ];
+
+	/*
+	   proc
+	 */
+	proc -> "binder_proc_show()" [ color=yellow ];
+	/* block 1, binder_proc */
+	"binder_proc_show()" -> "hlist_for binder_procs" [ color=yellow ];
+	"hlist_for binder_procs" -> NODE_bps_state [ color=yellow ];
+	"hlist_for binder_procs" -> "print_binder_proc()" [ label = "print_all=1" color=yellow ];
+
+	/* func: print_binder_proc */
+	"print_binder_proc()" -> NODE_pbp_proc;
+	"print_binder_proc()" -> NODE_pbp_context;
+	"print_binder_proc()" -> "for proc->threads";
+	"for proc->threads" -> "print_binder_thread_ilocked()";
+	"print_binder_proc()" -> "for proc->nodes";
+	"for proc->nodes" -> "print_binder_node_nilocked()";
+	"print_binder_proc()" -> "print_binder_ref_olocked()" [ label = "if print_all" ];
+	"print_binder_proc()" -> "binder_alloc_print_allocated()" [ label = "proc->alloc" ];
+	"print_binder_proc()" -> "list_for proc->todo";
+	"list_for proc->todo" -> "print_binder_work_ilocked()" [ label = "  pending transaction" ];
+	"print_binder_proc()" -> "list_for proc->delivered_death";
+	"list_for proc->delivered_death" -> NODE_pbp_ddb;
+
+	/* func: print_binder_node_nilocked */
+	"print_binder_node_nilocked()" -> NODE_pbn_node;
+	"print_binder_node_nilocked()" -> NODE_pbn_proc;
+	"print_binder_node_nilocked()" -> "hlist_for node->refs";
+	"hlist_for node->refs" -> NODE_pbn_proc_pid;
+	"print_binder_node_nilocked()" -> "list_for node->async->todo";
+	"list_for node->async->todo" -> "print_binder_work_ilocked()" [ label = "pending async transaction" ];
+
+	/* func: print_binder_ref_olocked */
+	"print_binder_ref_olocked()" -> NODE_pbr_ref; 
+
+	/* func: binder_alloc_print_allocated */
+	"binder_alloc_print_allocated()" -> "for alloc->allocated_buffers";
+	"for alloc->allocated_buffers" -> "print_binder_buffer()";
+	"print_binder_buffer()" -> NODE_pbb_buffer;
+
+	/* func: print_binder_work_ilocked */
+	"print_binder_work_ilocked()" -> "print_binder_transaction_ilocked()";
+	"print_binder_transaction_ilocked()" -> NODE_pbt_t;
+
+	/* func: print_binder_thread_ilocked */
+	"print_binder_thread_ilocked()" -> NODE_pbt_thread;
+	"print_binder_thread_ilocked()" -> "while thread->transaction_stack";
+	"while thread->transaction_stack" -> "print_binder_transaction_ilocked()" [ label="if t->from == thread, '    outgoing transaction'" ];
+	"while thread->transaction_stack" -> "print_binder_transaction_ilocked()" [ label="if t->to_thread == thread, '    incoming transaction'" ];
+	"while thread->transaction_stack" -> "print_binder_transaction_ilocked()" [ label="else, '    bad transaction'" ];
+	"print_binder_thread_ilocked()" -> "list_for thread->todo";
+	"list_for thread->todo" -> "print_binder_work_ilocked()" [ label="    pending transaction" ];
+
+	/* func: print_binder_stats */
+	"print_binder_stats()" -> "for stats->bc";
+	"for stats->bc" -> NODE_pbs_bc;
+	"print_binder_stats()" -> "for stats->br";
+	"for stats->br" -> NODE_pbs_br;
+	"print_binder_stats()" -> "for stats->obj_created";
+	"for stats->obj_created" -> NODE_pbs_obj;
+
+	/* func: print_binder_proc_stats */
+	"print_binder_proc_stats()" -> NODE_pbps_proc;
+	"print_binder_proc_stats()" -> NODE_pbps_context;
+	"print_binder_proc_stats()" -> NODE_pbps_threadc;
+	"print_binder_proc_stats()" -> NODE_pbps_threads;
+	"print_binder_proc_stats()" -> NODE_pbps_nodes;
+	"print_binder_proc_stats()" -> NODE_pbps_refs;
+	"print_binder_proc_stats()" -> NODE_pbps_buffers;
+	"print_binder_proc_stats()" -> "binder_alloc_print_pages()";
+	"print_binder_proc_stats()" -> NODE_pbps_pendings;
+	"print_binder_proc_stats()" -> "print_binder_stats()" [ label = "proc_stats" ];
+
+	/* func: binder_alloc_print_pages */
+	"binder_alloc_print_pages()" -> NODE_bpp_pages;
+	"binder_alloc_print_pages()" -> NODE_bpp_pages_high;
+
+	/* func: print_binder_transaction_log_entry */
+	"print_binder_transaction_log_entry()" -> NODE_btl_logentry;
+}
+

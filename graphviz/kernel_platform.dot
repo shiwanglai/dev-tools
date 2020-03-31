@@ -1,0 +1,44 @@
+
+/* 
+ * graphviz.org
+ * a -> b
+ */
+digraph kernel {
+	subgraph cluster_init_main_c {
+		label = "init/main.c"
+		"start_kernel()";
+		"arch_call_rest_init()";
+		"rest_init()";
+	       	"kernel_thread(kernel_init, NULL, CLONE_FS)";
+		"kernel_init()";
+		"kernel_init_freeable()";
+	       	"do_basic_setup()";
+	}
+	subgraph cluster_drivers_base_init_c {
+		label = "drivers/base/init.c"
+		"driver_init()";
+	}
+	subgraph cluster_drivers_base_platform_c {
+		label = "drivers/base/platform.c"
+		"platform_bus_init()";
+	}
+	subgraph cluster_drivers_base_core_c {
+		label = "drivers/base/core.c"
+		"device_register(&platform_bus)";
+	}
+	subgraph cluster_drivers_base_bus_c {
+		label = "drivers/base/bus.c"
+		"bus_register(&platform_bus_type)";
+	}
+
+	"start_kernel()" -> "arch_call_rest_init()"
+	"arch_call_rest_init()" -> "rest_init()";
+	"rest_init()" -> "kernel_thread(kernel_init, NULL, CLONE_FS)";
+	"kernel_init()" -> "kernel_init_freeable()";
+	"kernel_init_freeable()" -> "do_basic_setup()";
+	"do_basic_setup()" -> "driver_init()";
+	"driver_init()" -> "platform_bus_init()";
+	"platform_bus_init()" -> "device_register(&platform_bus)";
+	"platform_bus_init()" -> "bus_register(&platform_bus_type)";
+}
+
