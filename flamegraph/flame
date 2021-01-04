@@ -1,0 +1,99 @@
+#!/bin/bash 
+
+#-------------------------------------------
+# the path of flame graph scripts, default is "/opt/FlameGraph"
+# https://github.com/brendangregg/FlameGraph
+#
+flame_graph_scripts="/opt/FlameGraph/"
+
+#-------------------------------------------
+function perf_data_to_frame_graph ( )
+{
+	local perf_data=$1
+	local svg="${perf_data}.svg"
+
+	echo flaming
+	perf script -i "${perf_data}" \
+		| ${flame_graph_scripts}/stackcollapse-perf.pl \
+		| ${flame_graph_scripts}/flamegraph.pl --title="${svg}" \
+		> "${svg}"
+
+	echo flaming done
+} 
+
+#-------------------------------------------
+function perf_data_to_diff_frame_graph ( )
+{
+	local perf_data_before=$1
+	local perf_data_after=$2
+	local option=""
+	local diff_flame_before="${perf_data_before}.base.svg"
+	local diff_flame_after="${perf_data_after}.base.svg"
+	
+	local folded_before="${perf_data_before}.folded"
+	local folded_after="${perf_data_after}.folded"
+
+	echo diff flaming ps
+	perf script -i "${perf_data_before}" \
+		| ${flame_graph_scripts}/stackcollapse-perf.pl \
+		> "${folded_before}"
+	perf script -i "${perf_data_after}" \
+		| ${flame_graph_scripts}/stackcollapse-perf.pl \
+		> "${folded_after}"
+	
+	echo diff flaming df
+	${flame_graph_scripts}/difffolded.pl ${option}  "${folded_before}"  "${folded_after}" \
+		| ${flame_graph_scripts}/flamegraph.pl --title="${diff_flame_after}" \
+		> "${diff_flame_after}"
+	#${flame_graph_scripts}/difffolded.pl ${option}  "${folded_after}"  "${folded_before}" \
+	#	| ${flame_graph_scripts}/flamegraph.pl --title="${diff_flame_before}" --negate \
+	#	> "${diff_flame_before}"
+
+	rm -f  "${folded_before}"
+	rm -f  "${folded_after}"
+
+	echo diff flaming done
+} 
+
+#-------------------------------------------
+function usage_show ( )
+{
+	echo "create flame graph from <perf.data>"
+	echo "    flame <perf.data>"
+	echo "create diff flame graph from <perf.data>s"
+	echo "    flame -d <perf.data.before> <perf.data.after>"
+}
+
+#-------------------------------------------
+function main ( )
+{
+	local diff_mode=0
+	
+	while getopts :dh FLAG; do
+		case $FLAG in
+			d)  #set option "d"
+				local diff_mode=1
+				;;
+			h)  #set option "h"
+				usage_show
+				exit 1
+				;;	
+			\?) #unrecognized option - show help
+				usage_show
+				exit 1
+				;;
+		esac
+	done
+	# the residual arguments
+	shift $((OPTIND-1))
+	# echo $@
+
+	if [ "${diff_mode}" -eq 0 ]; then
+		perf_data_to_frame_graph $@
+	else 
+		perf_data_to_diff_frame_graph $@	
+	fi
+}
+
+#-------------------------------------------
+main $*
