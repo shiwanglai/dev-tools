@@ -7,12 +7,26 @@
 flame_graph_scripts="/opt/FlameGraph/"
 
 #-------------------------------------------
+function folded_data_to_frame_graph ( )
+{
+	local folded_data=$1
+	local svg="${folded_data}.svg"
+
+	echo flaming folded
+	cat "${folded_data}" \
+		| ${flame_graph_scripts}/flamegraph.pl --title="${svg}" \
+		> "${svg}"
+
+	echo flaming done
+}
+
+#-------------------------------------------
 function perf_data_to_frame_graph ( )
 {
 	local perf_data=$1
 	local svg="${perf_data}.svg"
 
-	echo flaming
+	echo flaming perf data
 	perf script -i "${perf_data}" \
 		| ${flame_graph_scripts}/stackcollapse-perf.pl \
 		| ${flame_graph_scripts}/flamegraph.pl --title="${svg}" \
@@ -60,6 +74,8 @@ function usage_show ( )
 {
 	echo "create flame graph from <perf.data>"
 	echo "    flame <perf.data>"
+	echo "create flame graph from <folded.data> directly"
+	echo "    flame -f <folded.data>"
 	echo "create diff flame graph from <perf.data>s"
 	echo "    flame -d <perf.data.before> <perf.data.after>"
 }
@@ -68,11 +84,15 @@ function usage_show ( )
 function main ( )
 {
 	local diff_mode=0
+	local folded_mode=0
 	
-	while getopts :dh FLAG; do
+	while getopts :dfh FLAG; do
 		case $FLAG in
 			d)  #set option "d"
 				local diff_mode=1
+				;;
+			f)  #set option "f"
+				local folded_mode=1
 				;;
 			h)  #set option "h"
 				usage_show
@@ -88,10 +108,12 @@ function main ( )
 	shift $((OPTIND-1))
 	# echo $@
 
-	if [ "${diff_mode}" -eq 0 ]; then
-		perf_data_to_frame_graph $@
-	else 
+	if [ "${diff_mode}" -eq 1 ]; then
 		perf_data_to_diff_frame_graph $@	
+	elif [ "${folded_mode}" -eq 1 ]; then
+		folded_data_to_frame_graph $@
+	else
+		perf_data_to_frame_graph $@
 	fi
 }
 
