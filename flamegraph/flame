@@ -1,10 +1,10 @@
-#!/bin/bash 
+#!/bin/bash
 
 #-------------------------------------------
 # the path of flame graph scripts, default is "/opt/FlameGraph"
 # https://github.com/brendangregg/FlameGraph
 #
-flame_graph_scripts="/opt/FlameGraph/"
+flame_graph_path="/opt/FlameGraph/"
 
 #-------------------------------------------
 function folded_data_to_frame_graph ( )
@@ -14,11 +14,32 @@ function folded_data_to_frame_graph ( )
 
 	echo flaming folded
 	cat "${folded_data}" \
-		| ${flame_graph_scripts}/flamegraph.pl --title="${svg}" \
+		| ${flame_graph_path}/flamegraph.pl --title="${svg}" \
 		> "${svg}"
 
 	echo flaming done
 }
+
+#-------------------------------------------
+function folded_data_to_diff_frame_graph ( )
+{
+	local folded_before=$1
+	local folded_after=$2
+	local option=""
+	local diff_flame_before="${folded_before}.base.svg"
+	local diff_flame_after="${folded_after}.base.svg"
+
+	echo diff flaming folded
+	${flame_graph_path}/difffolded.pl ${option}  "${folded_before}"  "${folded_after}" \
+		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_after}" \
+		> "${diff_flame_after}"
+	${flame_graph_path}/difffolded.pl ${option}  "${folded_after}"  "${folded_before}" \
+		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_before}" --negate \
+		> "${diff_flame_before}"
+
+	echo diff flaming done
+}
+
 
 #-------------------------------------------
 function perf_data_to_frame_graph ( )
@@ -28,12 +49,12 @@ function perf_data_to_frame_graph ( )
 
 	echo flaming perf data
 	perf script -i "${perf_data}" \
-		| ${flame_graph_scripts}/stackcollapse-perf.pl \
-		| ${flame_graph_scripts}/flamegraph.pl --title="${svg}" \
+		| ${flame_graph_path}/stackcollapse-perf.pl \
+		| ${flame_graph_path}/flamegraph.pl --title="${svg}" \
 		> "${svg}"
 
 	echo flaming done
-} 
+}
 
 #-------------------------------------------
 function perf_data_to_diff_frame_graph ( )
@@ -43,31 +64,31 @@ function perf_data_to_diff_frame_graph ( )
 	local option=""
 	local diff_flame_before="${perf_data_before}.base.svg"
 	local diff_flame_after="${perf_data_after}.base.svg"
-	
+
 	local folded_before="${perf_data_before}.folded"
 	local folded_after="${perf_data_after}.folded"
 
 	echo diff flaming ps
 	perf script -i "${perf_data_before}" \
-		| ${flame_graph_scripts}/stackcollapse-perf.pl \
+		| ${flame_graph_path}/stackcollapse-perf.pl \
 		> "${folded_before}"
 	perf script -i "${perf_data_after}" \
-		| ${flame_graph_scripts}/stackcollapse-perf.pl \
+		| ${flame_graph_path}/stackcollapse-perf.pl \
 		> "${folded_after}"
-	
+
 	echo diff flaming df
-	${flame_graph_scripts}/difffolded.pl ${option}  "${folded_before}"  "${folded_after}" \
-		| ${flame_graph_scripts}/flamegraph.pl --title="${diff_flame_after}" \
+	${flame_graph_path}/difffolded.pl ${option}  "${folded_before}"  "${folded_after}" \
+		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_after}" \
 		> "${diff_flame_after}"
-	#${flame_graph_scripts}/difffolded.pl ${option}  "${folded_after}"  "${folded_before}" \
-	#	| ${flame_graph_scripts}/flamegraph.pl --title="${diff_flame_before}" --negate \
-	#	> "${diff_flame_before}"
+	${flame_graph_path}/difffolded.pl ${option}  "${folded_after}"  "${folded_before}" \
+		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_before}" --negate \
+		> "${diff_flame_before}"
 
 	rm -f  "${folded_before}"
 	rm -f  "${folded_after}"
 
 	echo diff flaming done
-} 
+}
 
 #-------------------------------------------
 function usage_show ( )
@@ -85,7 +106,7 @@ function main ( )
 {
 	local diff_mode=0
 	local folded_mode=0
-	
+
 	while getopts :dfh FLAG; do
 		case $FLAG in
 			d)  #set option "d"
@@ -97,7 +118,7 @@ function main ( )
 			h)  #set option "h"
 				usage_show
 				exit 1
-				;;	
+				;;
 			\?) #unrecognized option - show help
 				usage_show
 				exit 1
@@ -108,10 +129,14 @@ function main ( )
 	shift $((OPTIND-1))
 	# echo $@
 
-	if [ "${diff_mode}" -eq 1 ]; then
-		perf_data_to_diff_frame_graph $@	
-	elif [ "${folded_mode}" -eq 1 ]; then
-		folded_data_to_frame_graph $@
+	if [ "${folded_mode}" -eq 1 ]; then
+		if [ "${diff_mode}" -eq 1 ]; then
+			folded_data_to_diff_frame_graph $@
+		else
+			folded_data_to_frame_graph $@
+		fi
+	elif [ "${diff_mode}" -eq 1 ]; then
+		perf_data_to_diff_frame_graph $@
 	else
 		perf_data_to_frame_graph $@
 	fi
