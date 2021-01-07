@@ -61,12 +61,15 @@ function perf_data_to_diff_frame_graph ( )
 {
 	local perf_data_before=$1
 	local perf_data_after=$2
+	local keep_intermediate=$3
 	local option=""
 	local diff_flame_before="${perf_data_before}.base.svg"
 	local diff_flame_after="${perf_data_after}.base.svg"
 
 	local folded_before="${perf_data_before}.folded"
 	local folded_after="${perf_data_after}.folded"
+	local diff_folded_before="${perf_data_before}.diff.folded"
+	local diff_folded_after="${perf_data_after}.diff.folded"
 
 	echo diff flaming ps
 	perf script -i "${perf_data_before}" \
@@ -78,14 +81,23 @@ function perf_data_to_diff_frame_graph ( )
 
 	echo diff flaming df
 	${flame_graph_path}/difffolded.pl ${option}  "${folded_before}"  "${folded_after}" \
-		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_after}" \
+		> "${diff_folded_after}"
+	${flame_graph_path}/flamegraph.pl --title="${diff_flame_after}" \
+		< "${diff_folded_after}" \
 		> "${diff_flame_after}"
+
 	${flame_graph_path}/difffolded.pl ${option}  "${folded_after}"  "${folded_before}" \
-		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_before}" --negate \
+		> "${diff_folded_before}"
+	${flame_graph_path}/flamegraph.pl --title="${diff_flame_before}" --negate \
+		< "${diff_folded_before}" \
 		> "${diff_flame_before}"
 
-	rm -f  "${folded_before}"
-	rm -f  "${folded_after}"
+	if [ $keep_intermediate -eq 0 ]; then
+		rm -f  "${folded_before}"
+		rm -f  "${folded_after}"
+		rm -f  "${diff_folded_before}"
+		rm -f  "${diff_folded_after}"
+	fi
 
 	echo diff flaming done
 }
@@ -95,10 +107,14 @@ function usage_show ( )
 {
 	echo "create flame graph from <perf.data>"
 	echo "    flame <perf.data>"
-	echo "create flame graph from <folded.data> directly"
-	echo "    flame -f <folded.data>"
 	echo "create diff flame graph from <perf.data>s"
 	echo "    flame -d <perf.data.before> <perf.data.after>"
+	echo "create flame graph from <folded.data> directly"
+	echo "    flame -f <folded.data>"
+	echo "create diff flame graph from <folded.data>s"
+	echo "    flame -fd <folded.data.before> <folded.data.after>"
+	echo "-k to keep the intermediates"
+	echo "-h to show this"
 }
 
 #-------------------------------------------
@@ -106,14 +122,18 @@ function main ( )
 {
 	local diff_mode=0
 	local folded_mode=0
+	local keep_intermediate=0
 
-	while getopts :dfh FLAG; do
+	while getopts :dfkh FLAG; do
 		case $FLAG in
 			d)  #set option "d"
 				local diff_mode=1
 				;;
 			f)  #set option "f"
 				local folded_mode=1
+				;;
+			k)  #set option "k"
+				local keep_intermediate=1
 				;;
 			h)  #set option "h"
 				usage_show
@@ -136,7 +156,7 @@ function main ( )
 			folded_data_to_frame_graph $@
 		fi
 	elif [ "${diff_mode}" -eq 1 ]; then
-		perf_data_to_diff_frame_graph $@
+		perf_data_to_diff_frame_graph $@ ${keep_intermediate}
 	else
 		perf_data_to_frame_graph $@
 	fi
