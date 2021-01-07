@@ -25,17 +25,31 @@ function folded_data_to_diff_frame_graph ( )
 {
 	local folded_before=$1
 	local folded_after=$2
+	local keep_intermediate=$3
 	local option=""
-	local diff_flame_before="${folded_before}.base.svg"
-	local diff_flame_after="${folded_after}.base.svg"
+	local diff_flame_before="${folded_before}.base1.svg"
+	local diff_flame_after="${folded_after}.base2.svg"
+
+	local diff_folded_before="${folded_before}.diff.folded"
+	local diff_folded_after="${folded_after}.diff.folded"
 
 	echo diff flaming folded
 	${flame_graph_path}/difffolded.pl ${option}  "${folded_before}"  "${folded_after}" \
-		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_after}" \
+		> "${diff_folded_after}"
+	${flame_graph_path}/flamegraph.pl --title="${diff_flame_after}" \
+		< "${diff_folded_after}" \
 		> "${diff_flame_after}"
 	${flame_graph_path}/difffolded.pl ${option}  "${folded_after}"  "${folded_before}" \
-		| ${flame_graph_path}/flamegraph.pl --title="${diff_flame_before}" --negate \
+		> "${diff_folded_before}"
+	${flame_graph_path}/flamegraph.pl --title="${diff_flame_before}" --negate \
+		< "${diff_folded_before}" \
 		> "${diff_flame_before}"
+
+	# clean
+	if [ $keep_intermediate -eq 0 ]; then
+		rm -f  "${diff_folded_before}"
+		rm -f  "${diff_folded_after}"
+	fi
 
 	echo diff flaming done
 }
@@ -63,8 +77,8 @@ function perf_data_to_diff_frame_graph ( )
 	local perf_data_after=$2
 	local keep_intermediate=$3
 	local option=""
-	local diff_flame_before="${perf_data_before}.base.svg"
-	local diff_flame_after="${perf_data_after}.base.svg"
+	local diff_flame_before="${perf_data_before}.base1.svg"
+	local diff_flame_after="${perf_data_after}.base2.svg"
 
 	local folded_before="${perf_data_before}.folded"
 	local folded_after="${perf_data_after}.folded"
@@ -92,6 +106,7 @@ function perf_data_to_diff_frame_graph ( )
 		< "${diff_folded_before}" \
 		> "${diff_flame_before}"
 
+	# clean
 	if [ $keep_intermediate -eq 0 ]; then
 		rm -f  "${folded_before}"
 		rm -f  "${folded_after}"
@@ -151,7 +166,7 @@ function main ( )
 
 	if [ "${folded_mode}" -eq 1 ]; then
 		if [ "${diff_mode}" -eq 1 ]; then
-			folded_data_to_diff_frame_graph $@
+			folded_data_to_diff_frame_graph $@ ${keep_intermediate}
 		else
 			folded_data_to_frame_graph $@
 		fi
