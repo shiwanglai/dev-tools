@@ -1,0 +1,62 @@
+/* 
+ * graphviz.org
+ * a -> b
+ */
+digraph kernel {
+//	rankdir = "LR"
+//	label = "Diagram of rcu check"
+	node [ style=filled ]
+
+	subgraph cluster_arch_x86_kernel_apic_apic_c {
+		label = "arch/x86/entry/entry_64.S"
+
+		"apic_timer_interrupt()"
+	}
+
+	subgraph cluster_arch_x86_kernel_apic_apic_c {
+		label = "arch/x86/kernel/apic/apic.c"
+
+		"smp_apic_timer_interrupt()"
+		/* "smp_trace_apic_timer_interrupt()" */
+		"local_apic_timer_interrupt()"
+	}
+
+	subgraph cluster_kernel_time_tick_common_c {
+		label = "kernel/time/tick-common.c"
+
+		"tick_periodic()"
+		"tick_handle_periodic()"
+	}
+
+	subgraph cluster_kernel_time_timer_c {
+		label = "kernel/time/timer.c"
+
+		"update_process_times()"
+	}
+
+	subgraph cluster_kernel_rcu_tree {
+		label = "kernel/rcu/tree.c"
+
+		"rcu_check_callbacks()"		
+		"rcu_pending()"
+		"__rcu_pending()"
+		"check_cpu_stall()"
+		"print_cpu_stall()"
+		"print_other_cpu_stall()"
+	}
+
+	"apic_timer_interrupt()" -> "smp_apic_timer_interrupt()" -> "local_apic_timer_interrupt()"
+	"local_apic_timer_interrupt()" -> "tick_handle_periodic()" [label = "evt->event_handler"]
+	"tick_handle_periodic()" -> "tick_periodic()" -> "update_process_times()"
+
+	"update_process_times()" -> "rcu_check_callbacks()" -> "rcu_pending()" ->
+		"__rcu_pending()" -> "check_cpu_stall()" -> {
+		"print_cpu_stall()";
+		"print_other_cpu_stall()"
+	}
+
+	"print_cpu_stall()" -> "'INFO: %s self-detected stall on CPU', rsp->name"
+	"print_other_cpu_stall()" -> "'INFO: %s detected stalls on CPUs/tasks:', rsp->name"
+
+}
+
