@@ -1,0 +1,76 @@
+/* 
+ * graphviz.org
+ * a -> b
+ */
+digraph kernel {
+//	rankdir = "LR"
+//	label = "Diagram of dlopen"
+	node [ style=filled ]
+
+	subgraph cluster_dlfcn_dlopen_c {
+		label = "dlfcn/dlopen.c"
+
+		"dlopen()";
+		"__dlopen()";
+		"dlopen_doit()";
+	}
+
+	subgraph cluster_elf_dl_open_c {
+		label = "elf/dl-open.c"
+
+		"_dl_open()";
+		"dl_open_worker()";
+	}
+
+	subgraph cluster_elf_dl_reloc_c {
+		label = "elf/dl-reloc.c"
+
+		"_dl_relocate_object()";
+	}
+
+	subgraph cluster_elf_dynamic_link_h {
+		label = "elf/dynamic-link.h"
+
+		"ELF_DYNAMIC_RELOCATE"
+	}
+
+	subgraph cluster_sysdeps_x86_64_dl_machine_h {
+		label = "sysdeps/x86_64/dl-machine.h"
+
+		"elf_machine_runtime_setup()"
+	}
+	subgraph cluster_sysdeps_x86_64_dl_trampoline_s_h {
+		label = "sysdeps/x86_64/dl-trampoline.S/h"
+
+		"_dl_runtime_profile()";
+		"_dl_runtime_resolve()"
+	}
+
+	subgraph cluster_elf_dl_load_c {
+		label = "elf/dl-load.c"
+
+		"_dl_map_object()"
+		"_dl_map_object_from_fd()"
+	}
+
+	subgraph cluster_elf_dl_map_segments_h {
+		label = "elf/dl-map-segments.h"
+
+		"_dl_map_segments()"
+	}
+
+	"dlopen()" -> "__dlopen()" -> "dlopen_doit()" -> "_dl_open()" -> "dl_open_worker()"
+	"dl_open_worker()" -> {
+		"_dl_relocate_object()"; "_dl_map_object()"
+	}
+	"_dl_relocate_object()" -> "ELF_DYNAMIC_RELOCATE" -> "elf_machine_runtime_setup()"
+	"elf_machine_runtime_setup()" -> {
+		"_dl_runtime_profile()"; "_dl_runtime_resolve()"
+	}
+	"_dl_runtime_profile()" -> "bndmov/bnd jms"
+	"_dl_runtime_resolve()" -> "bndmov/bnd jmp"
+
+
+	"_dl_map_object()" -> "_dl_map_object_from_fd()" -> "_dl_map_segments()" -> "__mmap()"
+}
+
