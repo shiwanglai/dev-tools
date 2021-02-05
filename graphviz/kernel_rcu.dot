@@ -1,4 +1,4 @@
-/* 
+/*
  * graphviz.org
  * a -> b
  */
@@ -7,10 +7,12 @@ digraph kernel {
 //	label = "Diagram of rcu check"
 	node [ style=filled ]
 
-	subgraph cluster_arch_x86_kernel_apic_apic_c {
+	subgraph cluster_arch_x86_entry_entry_64_s {
 		label = "arch/x86/entry/entry_64.S"
 
-		"apic_timer_interrupt()"
+		"apic_timer_interrupt"
+		"xen_failsafe_callback"
+		"general_protection"
 	}
 
 	subgraph cluster_arch_x86_kernel_apic_apic_c {
@@ -34,10 +36,10 @@ digraph kernel {
 		"update_process_times()"
 	}
 
-	subgraph cluster_kernel_rcu_tree {
+	subgraph cluster_kernel_rcu_tree_c {
 		label = "kernel/rcu/tree.c"
 
-		"rcu_check_callbacks()"		
+		"rcu_check_callbacks()"
 		"rcu_pending()"
 		"__rcu_pending()"
 		"check_cpu_stall()"
@@ -45,7 +47,28 @@ digraph kernel {
 		"print_other_cpu_stall()"
 	}
 
-	"apic_timer_interrupt()" -> "smp_apic_timer_interrupt()" -> "local_apic_timer_interrupt()"
+	subgraph cluster_arch_x86_kernel_traps_c {
+		label = "arch/x86/kernel/traps.c"
+
+		"do_general_protection()"
+	}
+
+	subgraph cluster_include_linux_rcupdate_h {
+		label = "include/linux/rcupdate.h"
+
+		"RCU_LOCKDEP_WARN"
+	}
+
+	subgraph cluster_kernel_lock_locdep_c {
+		label = "kernel/locking/lockdep.c"
+
+		"lockdep_rcu_suspicious()"
+	}
+
+	/*
+	 * rcu check cpu stall
+	 */
+	"apic_timer_interrupt" -> "smp_apic_timer_interrupt()" -> "local_apic_timer_interrupt()"
 	"local_apic_timer_interrupt()" -> "tick_handle_periodic()" [label = "evt->event_handler"]
 	"tick_handle_periodic()" -> "tick_periodic()" -> "update_process_times()"
 
@@ -57,6 +80,13 @@ digraph kernel {
 
 	"print_cpu_stall()" -> "'INFO: %s self-detected stall on CPU', rsp->name"
 	"print_other_cpu_stall()" -> "'INFO: %s detected stalls on CPUs/tasks:', rsp->name"
+
+	/*
+	 * rcu check cpu stall
+	 */
+	"xen_failsafe_callback" -> "general_protection" -> "do_general_protection()"
+	"do_general_protection()" -> "RCU_LOCKDEP_WARN" [label="!rcu_is_watching(), 'entry code didn't wake RCU'"]
+	"RCU_LOCKDEP_WARN" -> "lockdep_rcu_suspicious()" -> "'WARNING: suspicious RCU usage'"
 
 }
 

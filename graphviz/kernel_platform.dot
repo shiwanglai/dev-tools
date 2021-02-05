@@ -1,5 +1,5 @@
 
-/* 
+/*
  * graphviz.org
  * a -> b
  */
@@ -9,10 +9,10 @@ digraph kernel {
 		"start_kernel()";
 		"arch_call_rest_init()";
 		"rest_init()";
-	       	"kernel_thread(kernel_init, NULL, CLONE_FS)";
+		"kernel_thread(kernel_init, NULL, CLONE_FS)";
 		"kernel_init()";
 		"kernel_init_freeable()";
-	       	"do_basic_setup()";
+		"do_basic_setup()";
 	}
 	subgraph cluster_drivers_base_init_c {
 		label = "drivers/base/init.c"

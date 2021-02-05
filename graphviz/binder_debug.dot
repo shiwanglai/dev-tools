@@ -1,5 +1,5 @@
 
-/* 
+/*
  * graphviz.org
  * a -> b
  */
@@ -162,7 +162,7 @@ digraph binder {
 	transaction_log -> "binder_transaction_log_show()" [ label = "&binder_transaction_log" color=gold ];
 	"binder_transaction_log_show()" -> "for_count ARRAY_SIZE(log->entry)" [ color=gold ];
 	"for_count ARRAY_SIZE(log->entry)" -> "print_binder_transaction_log_entry()" [ color=gold ];
-	
+
 	/*
 	   failed_transaction_log
 	 */
@@ -201,7 +201,7 @@ digraph binder {
 	"list_for node->async->todo" -> "print_binder_work_ilocked()" [ label = "pending async transaction" ];
 
 	/* func: print_binder_ref_olocked */
-	"print_binder_ref_olocked()" -> NODE_pbr_ref; 
+	"print_binder_ref_olocked()" -> NODE_pbr_ref;
 
 	/* func: binder_alloc_print_allocated */
 	"binder_alloc_print_allocated()" -> "for alloc->allocated_buffers";
