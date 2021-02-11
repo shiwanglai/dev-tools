@@ -1,0 +1,56 @@
+/*
+ * graphviz.org
+ * a -> b
+ */
+digraph kernel {
+//	rankdir = "LR"
+//	label = "Diagram of tinyfs"
+	node [ style=filled ]
+
+    tinyfs_inode_ops [fillcolor=green]
+    tinyfs_dir_operations [fillcolor=orange]
+    tinyfs_file_operations [fillcolor=orange]
+
+	/* init */
+    "tinyfs_init()" -> "tinyfs_fs_type" [label="register_filesystem()"]
+    "tinyfs_fs_type" -> "tinyfs" [label=".name"]
+    "tinyfs_fs_type" -> "tinyfs_mount()" [label=".mount"]
+    "tinyfs_fs_type" -> "tinyfs_kill_superblock()" [label=".kill_sb"]
+
+    /* mount */
+    "tinyfs_mount()" -> "tinyfs_fill_super()" [label="mount_nodev()"]
+    "tinyfs_fill_super()" -> tinyfs_inode_ops [label="root_inode->i_op="]
+    "tinyfs_fill_super()" -> tinyfs_dir_operations [label="root_inode->i_fop="]
+
+    /* inode */
+    tinyfs_inode_ops -> "tinyfs_create()" [label=".create", color=green]
+    tinyfs_inode_ops -> "tinyfs_lookup()" [label=".lookup", color=green]
+    tinyfs_inode_ops -> "tinyfs_mkdir()" [label=".mkdir", color=green]
+    tinyfs_inode_ops -> "tinyfs_rmdir()" [label=".rmdir", color=green]
+    tinyfs_inode_ops -> "tinyfs_unlink()" [label=".unlink", color=green]
+
+    /* dir ops */
+    tinyfs_dir_operations -> "?tinyfs_readdir()" [label=".read", color=orange]
+
+
+    /* inode - create */
+    "tinyfs_create()" -> "tinyfs_do_create()"
+    "tinyfs_do_create()" -> tinyfs_inode_ops [label="inode->i_op="]
+    "tinyfs_do_create()" -> tinyfs_dir_operations [label="inode->i_fop="]
+    "tinyfs_do_create()" -> tinyfs_file_operations [label="inode->i_fop="]
+
+    /* inode - lookup */
+    "tinyfs_lookup()" -> "tinyfs_iget()"
+    "tinyfs_iget()" -> tinyfs_inode_ops [label="inode->i_op="]
+    "tinyfs_iget()" -> tinyfs_dir_operations [label="inode->i_fop="]
+    "tinyfs_iget()" -> tinyfs_file_operations [label="inode->i_fop="]
+
+    /* inode - mkdir */
+    "tinyfs_mkdir()" -> "tinyfs_do_create()"
+
+    /* file ops */
+    tinyfs_file_operations -> "tinyfs_read()" [label=".read", color=orange]
+    tinyfs_file_operations -> "tinyfs_write()" [label=".write", color=orange]
+
+}
+
