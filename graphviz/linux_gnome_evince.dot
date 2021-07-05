@@ -1,0 +1,88 @@
+/*
+ * graphviz.org
+ * a -> b
+ */
+digraph evince {
+	rankdir = "LR"
+//	label = "Diagram of rcu check"
+	node [ style=filled ]
+
+
+	subgraph cluster_shell_ev_application_c{
+		label = "shell/ev-application.c"
+
+		"ev_application_open_uri_at_dest()"
+		"ev_application_register_uri()"
+		"on_register_uri_cb()"
+		"_ev_application_open_uri_at_dest()"
+		"ev_application_open_uri_in_window()"
+	}
+
+	subgraph cluster_shell_ev_window_c {
+		label = "shell/ev-window.c"
+
+		"ev_window_init()"
+		"ev_window_open_recent_view()"
+		"ev_window_open_uri()"
+		"ev_window_load_job_cb()"
+		"recent_view_item_activated_cb()"
+		"view_is_loading_changed_cb()"
+		"ev_window_show_loading_message()"
+		"ev_window_hide_loading_message()"
+		"show_loading_message_cb()"
+	}
+
+	subgraph cluster_libview_ev_view_c {
+		label = "libview/ev-view.c"
+
+		"ev_view_draw()"
+		"draw_one_page()"
+		"ev_view_set_loading()"
+	}
+
+	subgraph cluster_libview_ev_recent_view_c {
+		label = "libview/ev-recent-view.c"
+
+		"ev_recent_view_new()"
+		"ev_recent_view_constructed()"
+	}
+
+	subgraph cluster_libview_ev_pixbuf_cache_c {
+		label = "libview/ev-pixbuf-cache.c"
+
+		"ev_pixbuf_cache_get_surface()"
+	}
+
+	/*
+	 * init
+	 */
+	"ev_window_init()" -> "g_signal_connect_object('notify::is-loading')" -> "view_is_loading_changed_cb()"
+
+	/*
+	 * rcu check cpu stall
+	 */
+	"ev_window_open_recent_view()" -> "ev_recent_view_new()"
+	"ev_recent_view_new()" -> "ev_recent_view_constructed()" // not directly
+	"ev_window_open_recent_view()" -> "g_signal_connect_object('item-activated')" -> "recent_view_item_activated_cb()"
+	"recent_view_item_activated_cb()" -> "ev_application_open_uri_at_dest()" -> "ev_application_register_uri()"
+	"ev_application_register_uri()" -> "g_dbus_connection_call('RegisterDocument')" -> "on_register_uri_cb()"
+	"on_register_uri_cb()" -> "_ev_application_open_uri_at_dest()" -> "ev_application_open_uri_in_window()" -> "ev_window_open_uri()"
+	"ev_window_open_uri()" -> "g_signal_connect('finish')" -> "ev_window_load_job_cb()"
+
+	"ev_view_draw()" -> "draw_one_page()"
+	"draw_one_page()" -> "ev_pixbuf_cache_get_surface()"
+	"draw_one_page()" -> "ev_view_set_loading()" [label="!page_surface, is_loading=TRUE"]
+	"draw_one_page()" -> "ev_view_set_loading()" [label="page_surface, is_loading=FALSE"]
+	"ev_view_set_loading()" -> "g_object_notify(is-loading)"
+
+	/* show */
+	"view_is_loading_changed_cb()" -> "ev_window_show_loading_message()" [label="is_loading"]
+	"ev_window_show_loading_message()" -> "g_timeout_add_full()" -> "show_loading_message_cb()"
+	"show_loading_message_cb()" -> "gtk_widget_show()" [label="loading_message"]
+
+	/* hide */
+	"view_is_loading_changed_cb()" -> "ev_window_hide_loading_message()" [label="!is_loading"]
+	"ev_window_hide_loading_message()" -> "gtk_widget_hide()" [label="loading_message"]
+
+}
+
