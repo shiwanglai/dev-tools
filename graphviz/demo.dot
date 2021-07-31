@@ -1,0 +1,32 @@
+/*
+ * graphviz.org
+ * dot demo.dot -Tsvg -o demo.svg
+ */
+digraph kernel {
+//	rankdir = "LR"
+//	label = "Diagram of demo"
+	node [ style=filled ]
+
+	subgraph cluster_dir_dir_a_c {
+		label = "dir/dir/a.c"
+
+		"func_a()"
+	}
+
+	subgraph cluster_dir_dir_b_c {
+		label = "dir/dir/b.c"
+
+		"func_b()"
+	}
+
+	/*
+	 * init
+	 */
+	"func_a()" -> "func_b()"
+
+	/*
+	 * runtime
+	 */
+
+}
+
